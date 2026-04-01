@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UFC Fight Predictor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #e8e8e8;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      background: #111;
+      border-bottom: 3px solid #cc0000;
+      padding: 22px 20px 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    header h1 span { color: #cc0000; }
+
+    .accuracy-bar {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: #666;
+      letter-spacing: 1px;
+    }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .container {
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    /* ── Corner cards ───────────────────────────────────── */
+    .corners {
+      display: grid;
+      grid-template-columns: 1fr 64px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .corner-card {
+      background: #161616;
+      border-radius: 10px;
+      padding: 22px 20px;
+      border: 2px solid #cc0000;
+    }
+
+    .corner-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: #cc0000;
+      margin-bottom: 12px;
+    }
+
+    .fighter-input {
+      width: 100%;
+      background: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      border-radius: 7px;
+      padding: 11px 13px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .fighter-input:focus { border-color: #cc0000; }
+
+    .vs-col {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 52px;
+    }
+
+    .vs-label {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: #333;
+      letter-spacing: 2px;
+    }
+
+    /* ── Predict button ─────────────────────────────────── */
+    .predict-btn {
+      display: block;
+      width: 100%;
+      margin: 28px 0;
+      padding: 16px;
+      background: #cc0000;
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .predict-btn:hover  { background: #aa0000; }
+    .predict-btn:active { transform: scale(0.99); }
+    .predict-btn:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; }
+
+    /* ── Error ──────────────────────────────────────────── */
+    .error-msg {
+      background: #1a0000;
+      border: 1px solid #cc0000;
+      border-radius: 8px;
+      padding: 13px 16px;
+      color: #ff6666;
+      margin-bottom: 20px;
+      display: none;
+      font-size: 0.9rem;
+    }
+
+    /* ── Results ────────────────────────────────────────── */
+    #results { display: none; }
+
+    .result-card {
+      background: #161616;
+      border-radius: 10px;
+      padding: 26px 24px;
+      margin-bottom: 16px;
+      border: 1px solid #222;
+    }
+
+    /* Winner */
+    .winner-banner {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .winner-label {
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    .winner-name {
+      font-size: 2rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 6px;
+      color: #cc0000;
+    }
+
+    /* Probability bar */
+    .prob-section { margin: 4px 0 20px; }
+
+    .prob-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .prob-labels .red-label  { color: #cc0000; }
+    .prob-labels .blue-label { color: #999; }
+
+    .prob-track {
+      height: 22px;
+      background: #1e1e1e;
+      border-radius: 11px;
+      overflow: hidden;
+      border: 1px solid #2a2a2a;
+    }
+
+    .prob-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #880000, #cc0000);
+      border-radius: 11px;
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+      min-width: 44px;
+    }
+
+    .prob-models {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .prob-model {
+      flex: 1;
+      background: #1e1e1e;
+      border-radius: 7px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      border: 1px solid #2a2a2a;
+    }
+
+    .prob-model-label {
+      font-size: 0.65rem;
+      color: #555;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .prob-model-val { color: #fff; font-weight: 700; font-size: 1rem; }
+
+    /* Tale of the tape */
+    .section-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #444;
+      margin-bottom: 16px;
+    }
+
+    .tape-header {
+      display: grid;
+      grid-template-columns: 1fr 110px 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .tape-header .th-red  { text-align: right; color: #cc0000; }
+    .tape-header .th-blue { text-align: left;  color: #888; }
+
+    .tape-row {
+      display: grid;
+      grid-template-columns: 1fr 110px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 0;
+      border-top: 1px solid #1e1e1e;
+      font-size: 0.88rem;
+    }
+
+    .tape-red  { text-align: right; color: #ccc; }
+    .tape-blue { text-align: left;  color: #ccc; }
+    .tape-stat { text-align: center; color: #444; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+
+    .tape-red.edge  { color: #cc0000; font-weight: 700; }
+    .tape-blue.edge { color: #ff6666; font-weight: 700; }
+
+    /* ── Responsive ─────────────────────────────────────── */
+    @media (max-width: 580px) {
+      .corners { grid-template-columns: 1fr; }
+      .vs-col  { padding-top: 0; }
+      header h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>UFC <span>Fight</span> Predictor</h1>
+    <div class="accuracy-bar" id="accuracy-bar">Loading model...</div>
+  </header>
+
+  <div class="container">
+
+    <div class="corners">
+      <div class="corner-card">
+        <div class="corner-label">Red Corner</div>
+        <input type="text" class="fighter-input" id="red-input"
+               placeholder="Search fighter..." list="fighters-list" autocomplete="off">
+      </div>
+
+      <div class="vs-col">
+        <div class="vs-label">VS</div>
+      </div>
+
+      <div class="corner-card">
+        <div class="corner-label">Blue Corner</div>
+        <input type="text" class="fighter-input" id="blue-input"
+               placeholder="Search fighter..." list="fighters-list" autocomplete="off">
+      </div>
+    </div>
+
+    <datalist id="fighters-list"></datalist>
+
+    <button class="predict-btn" id="predict-btn" onclick="runPredict()" disabled>
+      Predict Winner
+    </button>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <div id="results">
+
+      <!-- Winner + Probability -->
+      <div class="result-card">
+        <div class="winner-banner">
+          <div class="winner-label">Predicted Winner</div>
+          <div class="winner-name" id="winner-name"></div>
+        </div>
+
+        <div class="prob-section">
+          <div class="prob-labels">
+            <span class="red-label"  id="prob-label-red"></span>
+            <span class="blue-label" id="prob-label-blue"></span>
+          </div>
+          <div class="prob-track">
+            <div class="prob-fill" id="prob-fill" style="width:50%">50%</div>
+          </div>
+          <div class="prob-models">
+            <div class="prob-model">
+              <div class="prob-model-label">Logistic Regression</div>
+              <div class="prob-model-val" id="lr-val"></div>
+            </div>
+            <div class="prob-model">
+              <div class="prob-model-label">Random Forest</div>
+              <div class="prob-model-val" id="rf-val"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tale of the Tape -->
+      <div class="result-card">
+        <div class="section-title">Tale of the Tape</div>
+        <div class="tape-header">
+          <div class="th-red"  id="tape-red-name"></div>
+          <div></div>
+          <div class="th-blue" id="tape-blue-name"></div>
+        </div>
+        <div id="tape-rows"></div>
+      </div>
+
+    </div><!-- #results -->
+  </div>
+
+  <script>
+    // ── Helpers ────────────────────────────────────────────────
+    function inchesToFeet(inches) {
+      if (inches == null) return 'N/A';
+      const ft  = Math.floor(inches / 12);
+      const ins = Math.round(inches % 12);
+      return `${ft}'${ins}"`;
+    }
+
+    function fmt(val, suffix = '') {
+      if (val == null) return 'N/A';
+      if (typeof val === 'number') {
+        return (Number.isInteger(val) ? val : val.toFixed(2)) + suffix;
+      }
+      return val + suffix;
+    }
+
+    function pct(val) {
+      if (val == null) return 'N/A';
+      return `${(val * 100).toFixed(0)}%`;
+    }
+
+    // ── Boot ───────────────────────────────────────────────────
+    async function loadFighters() {
+      try {
+        const res  = await fetch('/api/fighters');
+        const data = await res.json();
+        const dl   = document.getElementById('fighters-list');
+        dl.innerHTML = data.fighters.map(f => `<option value="${escHtml(f)}">`).join('');
+        document.getElementById('predict-btn').disabled = false;
+      } catch (e) {
+        document.getElementById('predict-btn').disabled = false;
+      }
+    }
+
+    async function loadAccuracy() {
+      try {
+        const res  = await fetch('/api/accuracy');
+        const data = await res.json();
+        document.getElementById('accuracy-bar').textContent =
+          `Model Accuracy  —  Logistic Regression: ${(data.lr_accuracy * 100).toFixed(1)}%  |  Random Forest: ${(data.rf_accuracy * 100).toFixed(1)}%`;
+      } catch (_) {}
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Predict ────────────────────────────────────────────────
+    async function runPredict() {
+      const red  = document.getElementById('red-input').value.trim();
+      const blue = document.getElementById('blue-input').value.trim();
+      const err  = document.getElementById('error-msg');
+
+      err.style.display = 'none';
+      document.getElementById('results').style.display = 'none';
+
+      if (!red || !blue) {
+        err.textContent = 'Please enter both fighters.';
+        err.style.display = 'block';
+        return;
+      }
+
+      const btn = document.getElementById('predict-btn');
+      btn.disabled = true;
+      btn.textContent = 'Predicting...';
+
+      try {
+        const res  = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ red, blue }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          err.textContent = data.error || 'Prediction failed.';
+          err.style.display = 'block';
+          return;
+        }
+
+        renderResults(data);
+      } catch (e) {
+        err.textContent = 'Could not reach the server. Make sure app.py is running.';
+        err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Predict Winner';
+      }
+    }
+
+    // ── Render results ─────────────────────────────────────────
+    function renderResults(d) {
+      const redProb  = d.avg_red_prob;
+      const blueProb = 1 - redProb;
+
+      // Winner
+      document.getElementById('winner-name').textContent = d.predicted_winner.toUpperCase();
+
+      // Probability bar
+      document.getElementById('prob-label-red').textContent =
+        `${d.red_name}  ${(redProb * 100).toFixed(1)}%`;
+      document.getElementById('prob-label-blue').textContent =
+        `${(blueProb * 100).toFixed(1)}%  ${d.blue_name}`;
+
+      const fill = document.getElementById('prob-fill');
+      fill.style.width = '0%';
+      setTimeout(() => {
+        fill.style.width = `${(redProb * 100).toFixed(1)}%`;
+        fill.textContent = `${(redProb * 100).toFixed(0)}%`;
+      }, 60);
+
+      document.getElementById('lr-val').textContent =
+        `Red: ${(d.lr_red_prob * 100).toFixed(1)}%`;
+      document.getElementById('rf-val').textContent =
+        `Red: ${(d.rf_red_prob * 100).toFixed(1)}%`;
+
+      // Tale of the tape
+      document.getElementById('tape-red-name').textContent  = d.red_name;
+      document.getElementById('tape-blue-name').textContent = d.blue_name;
+
+      const r = d.red_stats;
+      const b = d.blue_stats;
+
+      const rows = [
+        { stat: 'Weight Class', rv: r.weight_class || 'N/A', bv: b.weight_class || 'N/A', cr: null, cb: null },
+        { stat: 'Style',        rv: r.fighting_style || 'N/A', bv: b.fighting_style || 'N/A', cr: null, cb: null },
+        { stat: 'Record',       rv: r.wins != null ? `${r.wins}W - ${r.losses}L` : 'N/A', bv: b.wins != null ? `${b.wins}W - ${b.losses}L` : 'N/A', cr: r.wins, cb: b.wins },
+        { stat: 'Height',       rv: inchesToFeet(r.height), bv: inchesToFeet(b.height), cr: r.height, cb: b.height },
+        { stat: 'Reach',        rv: fmt(r.reach, '"'),  bv: fmt(b.reach, '"'),  cr: r.reach,  cb: b.reach  },
+        { stat: 'Weight',       rv: fmt(r.weight, ' lbs'), bv: fmt(b.weight, ' lbs'), cr: r.weight, cb: b.weight },
+        { stat: 'Str / Min',    rv: r.str    != null ? r.str.toFixed(2)    : 'N/A', bv: b.str    != null ? b.str.toFixed(2)    : 'N/A', cr: r.str,    cb: b.str    },
+        { stat: 'KO Rate',      rv: pct(r.ko_rate), bv: pct(b.ko_rate), cr: r.ko_rate, cb: b.ko_rate },
+      ];
+
+      document.getElementById('tape-rows').innerHTML = rows.map(row => {
+        let rc = 'tape-red', bc = 'tape-blue';
+        if (row.cr != null && row.cb != null && row.cr !== row.cb) {
+          if (row.cr > row.cb) rc += ' edge';
+          else                  bc += ' edge';
+        }
+        return `
+          <div class="tape-row">
+            <div class="${rc}">${escHtml(String(row.rv))}</div>
+            <div class="tape-stat">${row.stat}</div>
+            <div class="${bc}">${escHtml(String(row.bv))}</div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('results').style.display = 'block';
+    }
+
+    // Enter key support
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') runPredict();
+    });
+
+    loadFighters();
+    loadAccuracy();
+  </script>
+</body>
+</html>

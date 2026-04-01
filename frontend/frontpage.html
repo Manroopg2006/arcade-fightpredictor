@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UFC Fighter Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #e8001d;
+    --green: #00ff88;
+    --bg: #060606;
+    --bg2: #0e0e0e;
+    --surface: #111111;
+    --border: #1f1f1f;
+    --text: #b0b0b0;
+    --dim: #444444;
+    --white: #f2f2f2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards 0.2s;
+  }
+
+  h1 {
+    font-family: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 400;
+    font-size: clamp(38px, 7vw, 62px);
+    line-height: 1.1;
+    color: var(--red);
+    letter-spacing: -0.01em;
+  }
+
+  /* ── TERMINAL ── */
+  .terminal {
+    width: 100%;
+    max-width: 600px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.85s;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+  }
+
+  .terminal-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 14px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.red    { background: #ff5f56; }
+  .dot.yellow { background: #ffbd2e; }
+  .dot.green  { background: #27c93f; }
+
+  .terminal-title {
+    flex: 1;
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.08em;
+    margin-left: -38px;
+  }
+
+  /* scanlines only on terminal body */
+  .terminal-body {
+    padding: 22px 26px 26px;
+    min-height: 185px;
+    line-height: 1.75;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    position: relative;
+  }
+
+  .terminal-body::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.1) 2px,
+      rgba(0,0,0,0.1) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .line {
+    display: flex;
+    align-items: baseline;
+    opacity: 0;
+    white-space: pre;
+  }
+
+  .prompt { color: var(--red); user-select: none; flex-shrink: 0; }
+  .cmd-text { color: var(--white); }
+
+  .output-line { opacity: 0; display: block; }
+
+  .output-label { color: var(--dim); }
+  .fighter-a    { color: #5b9cf6; }
+  .fighter-b    { color: #e887ff; }
+  .winner-text  { color: var(--green); font-weight: bold; }
+  .vs-sep       { color: var(--red); }
+
+  .blink-cursor {
+    display: inline-block;
+    width: 7px; height: 13px;
+    background: var(--green);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+  }
+
+  /* ── CTA ── */
+  .cta-wrap {
+    margin-top: 32px;
+    width: 100%;
+    max-width: 600px;
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 30px;
+    background: var(--red);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.18s, box-shadow 0.18s;
+  }
+
+  .cta-btn:hover {
+    background: #ff0020;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(232,0,29,0.4);
+  }
+
+  .cta-hint {
+    font-size: 12px;
+    color: var(--dim);
+    letter-spacing: 0.04em;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <h1>UFC Fighter<br>Predictor</h1>
+  </header>
+
+  <div class="terminal">
+    <div class="terminal-titlebar">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+      <span class="terminal-title">ufc-predictor — bash</span>
+    </div>
+    <div class="terminal-body" id="termBody"></div>
+  </div>
+
+  <div class="cta-wrap" id="ctaWrap">
+    <button class="cta-btn">Get Started →</button>
+    <span class="cta-hint">Free · No account needed</span>
+  </div>
+
+</div>
+
+<script>
+const body = document.getElementById('termBody');
+const cta  = document.getElementById('ctaWrap');
+
+const sequence = [
+  { type: 'input',  delay: 300,  text: 'predict --a "Jon Jones" --b "Stipe Miocic"' },
+  { type: 'blank',  delay: 80 },
+  { type: 'output', delay: 200,  html: '<span class="output-label">[ LOADING  ]</span>  Fetching fighter stats...' },
+  { type: 'output', delay: 600,  html: '<span class="output-label">[ ANALYSIS ]</span>  Running 50,000 simulations...' },
+  { type: 'output', delay: 750,  html: '<span class="output-label">[ MATCHUP  ]</span>  <span class="fighter-a">Jon Jones</span>  <span class="vs-sep">vs</span>  <span class="fighter-b">Stipe Miocic</span>' },
+  { type: 'blank',  delay: 200 },
+  { type: 'output', delay: 280,  html: '<span class="output-label">[ WINNER   ]</span>  <span class="winner-text">JON JONES</span>  <span style="color:var(--dim)">(78.4% confidence)</span>' },
+  { type: 'output', delay: 200,  html: '<span class="output-label">[ METHOD   ]</span>  Decision · Round 5 · Dominance: High' },
+  { type: 'blank',  delay: 80 },
+  { type: 'cursor', delay: 260 },
+];
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function makeOutputLine(html) {
+  const div = document.createElement('div');
+  div.className = 'output-line';
+  div.style.opacity = '0';
+  div.innerHTML = html;
+  body.appendChild(div);
+  return div;
+}
+
+function makeBlank() {
+  const div = document.createElement('div');
+  div.style.height = '5px';
+  body.appendChild(div);
+}
+
+async function typeInput(text) {
+  const line = document.createElement('div');
+  line.className = 'line';
+  line.style.opacity = '1';
+  const prompt = document.createElement('span');
+  prompt.className = 'prompt';
+  prompt.textContent = '$ ';
+  const textEl = document.createElement('span');
+  textEl.className = 'cmd-text';
+  line.appendChild(prompt);
+  line.appendChild(textEl);
+  body.appendChild(line);
+  for (let i = 0; i < text.length; i++) {
+    textEl.textContent += text[i];
+    await sleep(20 + Math.random() * 28);
+  }
+}
+
+async function fadeInOutput(el) {
+  el.style.transition = 'opacity 0.3s ease';
+  el.style.opacity = '1';
+  await sleep(340);
+}
+
+async function showCursor() {
+  const line = document.createElement('div');
+  line.className = 'line';
+  line.style.opacity = '1';
+  const prompt = document.createElement('span');
+  prompt.className = 'prompt';
+  prompt.textContent = '$ ';
+  const cur = document.createElement('span');
+  cur.className = 'blink-cursor';
+  line.appendChild(prompt);
+  line.appendChild(cur);
+  body.appendChild(line);
+}
+
+async function run() {
+  await sleep(1050);
+  for (const step of sequence) {
+    await sleep(step.delay);
+    if      (step.type === 'input')  await typeInput(step.text);
+    else if (step.type === 'output') await fadeInOutput(makeOutputLine(step.html));
+    else if (step.type === 'blank')  makeBlank();
+    else if (step.type === 'cursor') await showCursor();
+  }
+  await sleep(500);
+  cta.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
+  cta.style.transform = 'translateY(8px)';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    cta.style.transform = 'translateY(0)';
+    cta.style.opacity = '1';
+  }));
+}
+
+run();
+</script>
+</body>
+</html>

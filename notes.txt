@@ -1,0 +1,79 @@
+# UFC Predictor
+
+## Quick Start
+
+### 1. Install Python dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Start Flask backend
+```bash
+python backend/app.py
+```
+Flask runs on http://localhost:5000
+
+### 3. Install and start React dev server
+```bash
+npm install
+npm run dev
+```
+Open http://localhost:5173
+
+Vite proxies all `/api` requests to Flask automatically — no CORS issues.
+
+---
+
+## Project Structure
+```
+UFC Fighter Model/
+├── backend/
+│   ├── app.py               ← Flask server + API routes
+│   └── main.py              ← Data loading, model training, prediction
+├── data/
+│   ├── raw/                 ← CSV data files (Fighters, Fights, Events, Stats)
+│   └── processed/           ← Cleaned/processed data (populated by pipeline)
+├── frontend/                ← Flask serves this in production (built React app)
+│   ├── index.html           ← Vanilla HTML prototype (replaced by build)
+│   └── frontpage.html       ← Landing page prototype
+├── models/                  ← Saved model files (future use)
+├── src/                     ← React frontend source
+│   ├── main.jsx             ← React entry point
+│   ├── App.jsx              ← Router + page transitions
+│   ├── api.js               ← All API calls to Flask
+│   ├── index.css            ← Global styles
+│   ├── pages/
+│   │   ├── Landing.jsx      ← Home page with animated terminal demo
+│   │   ├── Predict.jsx      ← Fighter selection
+│   │   └── Result.jsx       ← Prediction results + Tale of the Tape
+│   └── components/
+│       ├── Terminal.jsx     ← Reusable typing terminal animation
+│       └── FighterSearch.jsx ← Autocomplete fighter input
+├── index.html               ← Vite root HTML
+├── package.json
+├── vite.config.js
+└── requirements.txt
+```
+
+## Pages
+- `/`        → Landing page with animated terminal demo
+- `/predict` → Select two fighters (red corner vs blue corner)
+- `/result`  → Prediction breakdown + stats comparison
+
+## ML Models
+Three models trained on historical fight data:
+- **Logistic Regression** — fast, interpretable baseline
+- **Random Forest** — ensemble model, typically higher accuracy
+- **XGBoost** — gradient boosting, handles non-linear feature interactions
+- Prediction uses the average probability of all three models
+
+Features (red minus blue differentials):
+- Physical: reach, height, weight, reach-to-height ratio
+- Record: wins, total fights
+- Striking: str/min, sig str accuracy, absorbed strikes, striking defense, KO rate, finish rate, strike efficiency
+- Grappling: takedowns/rnd, submission attempts, control time, sub rate, TD defense
+- Activity: avg fight time, days since last fight
+- Recent form: last-3 win rate, last-5 win rate, win streak
+- Context: stance matchup, weight class
+
+

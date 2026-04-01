@@ -1,0 +1,44 @@
+Striking
+sig_strikes_per_min_diff
+striking_accuracy_diff
+sig_strikes_absorbed_per_min_diff
+striking_defense_diff
+ko_rate_diff
+🔹 Grappling
+takedowns_per_15_diff
+submission_attempts_diff
+takedown_defense_diff
+control_time_diff
+🔹 Efficiency
+strike_efficiency_diff
+damage_diff
+🔹 Experience
+total_fights_diff
+ufc_fights_diff
+🔹 Recent Form
+last3_win_rate_diff
+last5_win_rate_diff
+win_streak_diff
+🔹 Age
+age_diff
+🔹 ELO (IMPORTANT)
+elo_A
+elo_B
+elo_diff
+🔹 Matchups
+grappling_vs_defense
+striking_vs_defense
+🔹 Activity
+days_since_last_fight_diff
+avg_fight_time_diff
+🔹 Body Ratios
+reach_to_height_ratio_diff
+🔹 Context
+stance_matchup
+weight_class_encoded
+short_notice_flag
+🔹 Extra
+finish_rate_diff
+submission_rate_diff
+h2h_wins_diff
+
